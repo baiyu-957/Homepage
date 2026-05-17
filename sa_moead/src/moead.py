@@ -180,17 +180,18 @@ class SA_MOEAD:
         }
 
     def _approx_hv(self, obj_pop: np.ndarray) -> float:
-        """Approximate hypervolume with ref point [0.1, 0.1, 0.1] (all obj ≤ 0)."""
-        ref = np.array([0.1, 0.1, 0.1])
-        dominated = obj_pop[np.all(obj_pop <= ref, axis=1)]
-        if len(dominated) == 0:
-            return 0.0
+        """Approximate hypervolume relative to nadir + margin reference point.
+
+        f2 objective = abs(cl_mean - cl_opt) is in [0, ~0.8], not <= 0,
+        so a fixed [0.1, 0.1, 0.1] ref incorrectly filters most solutions.
+        """
+        ref = obj_pop.max(axis=0) + np.array([0.05, 0.1, 0.05])
         try:
             from pymoo.indicators.hv import HV
             ind = HV(ref_point=ref)
-            return float(ind(dominated))
+            return float(ind(obj_pop))
         except Exception:
-            return float(np.sum(np.prod(ref - dominated, axis=1).clip(0)))
+            return float(np.sum(np.prod(ref - obj_pop, axis=1).clip(0)))
 
 
 # -----------------------------------------------------------------------
