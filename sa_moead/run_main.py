@@ -5,7 +5,13 @@ Methods  : SA_MOEAD, Random, Greedy, NSGA2_std, MOEAD_std
 Profiles : child, scholar, tourist, senior
 T0 values: 300 s, 600 s
 
-Output: results/tables/main_results.csv
+HV computation (fixed, fair):
+  - Reference point: FIXED_REF = [0, 0.5, 0] (in minimisation-objective space)
+  - Only feasible solutions (|duration - T0| ≤ eps) contribute to HV
+  - All methods use _extract_metrics; SA_MOEAD no longer reads history_hv
+  - NSGA2_std applies ECR repair inside _evaluate for fair feasibility
+
+Output: results/tables/main_results_fixed.csv
 """
 
 import argparse
@@ -54,9 +60,16 @@ PROFILE_TEMPLATES: dict[str, dict] = {
 ALL_METHODS = ["SA_MOEAD", "Random", "Greedy", "NSGA2_std", "MOEAD_std"]
 ALL_T0 = [300, 600]
 
+# Fixed reference point in minimisation-objective space:
+#   dim 0: -f1_interest ∈ (-1, 0]  → ref = 0  (worst interest = 0)
+#   dim 1:  cog_gap     ∈ [0, 1)   → ref = 0.5 (gap ≥ 0.5 is excluded; safe for feasible sols)
+#   dim 2: -f3_coherence ∈ (-1, 0] → ref = 0  (worst coherence = 0)
+# Points violating ref are silently excluded from HV (conservative, consistent across methods).
+FIXED_REF = np.array([0.0, 0.5, 0.0])
+
 CSV_FIELDS = [
     "method", "profile_type", "T0", "run_id", "seed",
-    "hv", "pareto_size",
+    "hv", "pareto_size", "pareto_feas",
     "f1_interest_mean", "cog_gap_mean", "f3_coherence_mean",
     "feasible_ratio", "runtime_sec",
 ]
@@ -152,14 +165,18 @@ def _non_dominated(obj_pop: np.ndarray) -> list[int]:
 
 
 def _compute_hv(pf: np.ndarray) -> float:
+    """HV using FIXED_REF; silently drops points that violate the reference."""
     if len(pf) == 0:
         return 0.0
-    ref = pf.max(axis=0) + np.array([0.05, 0.1, 0.05])
+    valid = np.all(pf < FIXED_REF, axis=1)
+    pf = pf[valid]
+    if len(pf) == 0:
+        return 0.0
     try:
         from pymoo.indicators.hv import HV
-        return float(HV(ref_point=ref)(pf))
+        return float(HV(ref_point=FIXED_REF)(pf))
     except Exception:
-        return float(np.sum(np.prod(ref - pf, axis=1).clip(0)))
+        return float(np.sum(np.prod(FIXED_REF - pf, axis=1).clip(0)))
 
 
 def _extract_metrics(
@@ -168,15 +185,28 @@ def _extract_metrics(
     solutions: list[list[int]],
     runtime: float,
 ) -> dict[str, Any]:
-    hv = _compute_hv(pf)
-    n_feasible = sum(1 for s in solutions if problem.is_feasible(s))
+    """Compute metrics; HV and objective means are computed from FEASIBLE solutions only."""
+    feas_mask = np.array([problem.is_feasible(s) for s in solutions], dtype=bool)
+    n_feas = int(feas_mask.sum())
+    pf_feas = pf[feas_mask] if n_feas > 0 else np.empty((0, 3))
+
+    hv = _compute_hv(pf_feas)
+
+    if n_feas > 0:
+        f1_mean = float(-pf_feas[:, 0].mean())
+        cg_mean = float(pf_feas[:, 1].mean())      # abs(cl_mean - cl_opt) ↓
+        f3_mean = float(-pf_feas[:, 2].mean())
+    else:
+        f1_mean = cg_mean = f3_mean = 0.0
+
     return {
         "hv": hv,
         "pareto_size": len(pf),
-        "f1_interest_mean": float(-pf[:, 0].mean()),
-        "cog_gap_mean": float(pf[:, 1].mean()),    # abs(cl_mean - cl_opt) ↓
-        "f3_coherence_mean": float(-pf[:, 2].mean()),
-        "feasible_ratio": n_feasible / max(len(solutions), 1),
+        "pareto_feas": n_feas,
+        "f1_interest_mean": f1_mean,
+        "cog_gap_mean": cg_mean,
+        "f3_coherence_mean": f3_mean,
+        "feasible_ratio": n_feas / max(len(solutions), 1),
         "runtime_sec": runtime,
     }
 
@@ -266,6 +296,7 @@ def run_nsga2_std(
         def _evaluate(self_, x: np.ndarray, out: dict, *args: Any, **kwargs: Any) -> None:
             perm = np.argsort(x)
             seq = _decode_perm(perm, problem)
+            seq = ecr_repair(seq, problem)          # enforce |duration - T0| ≤ eps
             out["F"] = problem.evaluate(seq, profile)
 
     res = minimize(
@@ -278,7 +309,9 @@ def run_nsga2_std(
 
     if res.F is not None and len(res.F) > 0:
         pf = res.F
-        solutions = [_decode_perm(np.argsort(x), problem) for x in res.X]
+        # Re-apply the same decode+repair to recover sequences that match res.F
+        solutions = [ecr_repair(_decode_perm(np.argsort(x), problem), problem)
+                     for x in res.X]
     else:
         obj0 = problem.evaluate([], profile)
         pf, solutions = obj0.reshape(1, 3), [[]]
@@ -343,20 +376,9 @@ def run_sa_moead(
                     pop_size=pop_size, T_neighbor=t_neighbor, max_gen=max_gen)
     result = algo.run()
 
-    pf = result["pareto_front"]
-    solutions = result["solutions"]
-    hv = result["history_hv"][-1][1] if result["history_hv"] else _compute_hv(pf)
-
-    n_feasible = sum(1 for s in solutions if problem.is_feasible(s))
-    return {
-        "hv": hv,
-        "pareto_size": len(pf),
-        "f1_interest_mean": float(-pf[:, 0].mean()),
-        "cog_gap_mean": float(pf[:, 1].mean()),
-        "f3_coherence_mean": float(-pf[:, 2].mean()),
-        "feasible_ratio": n_feasible / max(len(solutions), 1),
-        "runtime_sec": result["runtime_sec"],
-    }
+    # Use _extract_metrics (feasible-only HV, FIXED_REF) — consistent with all other methods
+    return _extract_metrics(problem, result["pareto_front"], result["solutions"],
+                            result["runtime_sec"])
 
 
 _RUNNERS: dict[str, Any] = {
@@ -438,7 +460,7 @@ def main() -> None:
     args = parser.parse_args()
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    csv_path = RESULTS_DIR / "main_results.csv"
+    csv_path = RESULTS_DIR / "main_results_fixed.csv"
 
     problems: dict[int, TourGuideProblem] = {
         T0: load_problem(T0) for T0 in args.t0_values
@@ -477,7 +499,7 @@ def main() -> None:
                 )
                 print(
                     f"HV={metrics['hv']:.4f}  "
-                    f"pareto={metrics['pareto_size']:3d}  "
+                    f"pareto={metrics['pareto_size']:3d}(feas={metrics['pareto_feas']:3d})  "
                     f"t={metrics['runtime_sec']:.1f}s"
                 )
 
