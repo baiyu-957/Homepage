@@ -1,0 +1,206 @@
+{
+  "child": {
+    "profile": {
+      "id": "child",
+      "age": 0.0,
+      "edu": 0.25,
+      "cog": 0.2,
+      "purpose": 0.0,
+      "interest": [
+        0.05,
+        0.05,
+        0.15,
+        0.25,
+        0.5
+      ]
+    },
+    "best_f1": 0.5788077116012573,
+    "best_cog_gap": 0.012500000000000011,
+    "best_f3": 0.10652691622575124,
+    "total_duration_sec": 295,
+    "pareto_size": 27,
+    "segments": [
+      {
+        "seg_id": 40,
+        "name": "seg_40",
+        "category": "趣闻",
+        "duration_sec": 65,
+        "f1_contribution": 0.8574929237365723
+      },
+      {
+        "seg_id": 50,
+        "name": "seg_50",
+        "category": "文化",
+        "duration_sec": 70,
+        "f1_contribution": 0.6431196928024292
+      },
+      {
+        "seg_id": 42,
+        "name": "seg_42",
+        "category": "文化",
+        "duration_sec": 70,
+        "f1_contribution": 0.6431196928024292
+      },
+      {
+        "seg_id": 4,
+        "name": "seg_4",
+        "category": "建筑",
+        "duration_sec": 90,
+        "f1_contribution": 0.1714985966682434
+      }
+    ]
+  },
+  "scholar": {
+    "profile": {
+      "id": "scholar",
+      "age": 0.67,
+      "edu": 1.0,
+      "cog": 1.0,
+      "purpose": 1.0,
+      "interest": [
+        0.5,
+        0.25,
+        0.1,
+        0.1,
+        0.05
+      ]
+    },
+    "best_f1": 0.7234898209571838,
+    "best_cog_gap": 0.17000000000000004,
+    "best_f3": 0.06646714452654123,
+    "total_duration_sec": 305,
+    "pareto_size": 97,
+    "segments": [
+      {
+        "seg_id": 75,
+        "name": "seg_75",
+        "category": "历史",
+        "duration_sec": 80,
+        "f1_contribution": 0.8638684749603271
+      },
+      {
+        "seg_id": 56,
+        "name": "seg_56",
+        "category": "历史",
+        "duration_sec": 80,
+        "f1_contribution": 0.8638684749603271
+      },
+      {
+        "seg_id": 7,
+        "name": "seg_7",
+        "category": "建筑",
+        "duration_sec": 65,
+        "f1_contribution": 0.5183210968971252
+      },
+      {
+        "seg_id": 91,
+        "name": "seg_91",
+        "category": "艺术",
+        "duration_sec": 80,
+        "f1_contribution": 0.6479013562202454
+      }
+    ]
+  },
+  "senior": {
+    "profile": {
+      "id": "senior",
+      "age": 1.0,
+      "edu": 0.5,
+      "cog": 0.3,
+      "purpose": 0.5,
+      "interest": [
+        0.15,
+        0.35,
+        0.25,
+        0.2,
+        0.05
+      ]
+    },
+    "best_f1": 0.5249999761581421,
+    "best_cog_gap": 0.04249999999999998,
+    "best_f3": 0.03154148875425259,
+    "total_duration_sec": 305,
+    "pareto_size": 93,
+    "segments": [
+      {
+        "seg_id": 32,
+        "name": "seg_32",
+        "category": "建筑",
+        "duration_sec": 75,
+        "f1_contribution": 0.5333333611488342
+      },
+      {
+        "seg_id": 15,
+        "name": "seg_15",
+        "category": "艺术",
+        "duration_sec": 80,
+        "f1_contribution": 0.5
+      },
+      {
+        "seg_id": 5,
+        "name": "seg_5",
+        "category": "建筑",
+        "duration_sec": 80,
+        "f1_contribution": 0.5333333611488342
+      },
+      {
+        "seg_id": 98,
+        "name": "seg_98",
+        "category": "艺术",
+        "duration_sec": 70,
+        "f1_contribution": 0.5333333611488342
+      }
+    ]
+  },
+  "tourist": {
+    "profile": {
+      "id": "tourist",
+      "age": 0.67,
+      "edu": 0.5,
+      "cog": 0.5,
+      "purpose": 0.0,
+      "interest": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    "best_f1": 0.4472135901451111,
+    "best_cog_gap": 0.04500000000000004,
+    "best_f3": 0.19872934619585672,
+    "total_duration_sec": 305,
+    "pareto_size": 95,
+    "segments": [
+      {
+        "seg_id": 83,
+        "name": "seg_83",
+        "category": "建筑",
+        "duration_sec": 75,
+        "f1_contribution": 0.4472135901451111
+      },
+      {
+        "seg_id": 7,
+        "name": "seg_7",
+        "category": "建筑",
+        "duration_sec": 65,
+        "f1_contribution": 0.4472135901451111
+      },
+      {
+        "seg_id": 4,
+        "name": "seg_4",
+        "category": "建筑",
+        "duration_sec": 90,
+        "f1_contribution": 0.4472135901451111
+      },
+      {
+        "seg_id": 0,
+        "name": "seg_0",
+        "category": "建筑",
+        "duration_sec": 75,
+        "f1_contribution": 0.4472135901451111
+      }
+    ]
+  }
+}
